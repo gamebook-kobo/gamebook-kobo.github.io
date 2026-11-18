@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ゲームブック工房</title>
+<meta name="description" content="場面を選択肢でつないで、分岐する物語とTRPGシナリオをつくるiPhoneアプリ。">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#0A0F1C">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;background:#0A0F1C;color:#EAF0FF;line-height:1.85;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(rgba(130,160,220,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(130,160,220,.04) 1px,transparent 1px);background-size:28px 28px}
+main{position:relative;max-width:720px;margin:0 auto;padding:calc(48px + env(safe-area-inset-top,0px)) 22px calc(56px + env(safe-area-inset-bottom,0px))}
+.lab{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.2em;color:#FFCE32}
+.head{display:flex;gap:16px;align-items:center;margin:14px 0 10px}
+.head img{width:64px;height:64px;border-radius:15px}
+h1{font-size:clamp(26px,7vw,36px);letter-spacing:.04em;white-space:nowrap}
+.lead{color:#93A5C4;font-size:15px}
+h2{font-size:16px;margin:40px 0 12px;display:flex;gap:10px;align-items:baseline}
+h2 span{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;letter-spacing:.18em;color:#5EA8FF}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+.card{background:#131E33;border:1px solid #223354;border-radius:12px;padding:14px 16px}
+.card b{display:block;margin-bottom:4px}
+.card p{font-size:13.5px;color:#C9D5EA}
+.plan{background:#111A2E;border:1px solid #33507E;border-radius:12px;padding:16px}
+.plan li{font-size:14px;margin:4px 0 4px 1.2em}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.links a{color:#5EA8FF;border:1px solid #2B5CAB;border-radius:999px;padding:8px 16px;text-decoration:none;font-size:14px}
+.links a:hover{background:#12294D}
+.note{font-size:12.5px;color:#93A5C4;margin-top:10px}
+footer{margin-top:48px;font-size:12px;color:#71809E}
+</style>
+</head>
+<body>
+<main>
+  <div class="lab">GAMEBOOK STUDIO</div>
+  <div class="head"><img src="icon.png" alt=""><h1>ゲームブック工房</h1></div>
+  <p class="lead">場面を選択肢でつないで、分岐する物語とTRPGシナリオをつくる iPhone アプリ。</p>
+
+  <h2><span>FEATURES</span>できること</h2>
+  <div class="grid">
+    <div class="card"><b>フローチャートで組み立てる</b><p>場面をタップして書き、「＋ 選択肢と次の場面」で物語を伸ばしていけます。</p></div>
+    <div class="card"><b>TRPGにも、ノベルゲームにも</b><p>ダイス判定・SANやHP・GMメモ・NPC・ハンドアウト。アイテムやフラグで開くルートも。</p></div>
+    <div class="card"><b>詰まりを見つける</b><p>通しチェックが全ての道筋をたどって、行き止まりや、たどり着けないエンディングを見つけます。</p></div>
+    <div class="card"><b>そのままGMとして回す</b><p>セッションモードで、描写・GMメモ・判定・ハンドアウトを1つの画面に。判定はコピーしてセッションツールに貼れます。</p></div>
+    <div class="card"><b>いろいろな形で書き出す</b><p>ブラウザで遊べるHTML、ティラノスクリプト用のファイル、印刷・PDFにできるシナリオ文書。</p></div>
+    <div class="card"><b>ログインなしでも使える</b><p>作品は端末に保存されます。ログインすると、クラウドにも保存して機種変更しても引き継げます。</p></div>
+  </div>
+
+  <h2><span>PLAN</span>料金</h2>
+  <div class="plan">
+    <p>基本の機能は無料で使えます。プレミアムプラン（月額200円／年額2,000円・税込）では、次の制限がなくなります。</p>
+    <ul>
+      <li>作品数（無料は3作まで）</li>
+      <li>セッションモード（無料は月1回）</li>
+      <li>ティラノスクリプト用・シナリオ文書などの書き出し（無料は動画を見ると1回使えます）</li>
+      <li>着せ替え・版の保存</li>
+    </ul>
+  </div>
+
+  <h2><span>SUPPORT</span>サポート・お問い合わせ</h2>
+  <p>不具合のご報告やご要望は、メールでお送りください。個人で開発しているので、お返事に少しお時間をいただくことがあります。</p>
+  <div class="links" style="margin-top:12px">
+    <a href="mailto:tsuzuloom.app@gmail.com?subject=%E3%82%B2%E3%83%BC%E3%83%A0%E3%83%96%E3%83%83%E3%82%AF%E5%B7%A5%E6%88%BF%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6">tsuzuloom.app@gmail.com</a>
+  </div>
+  <p class="note">アカウントの削除は、アプリのホーム右上の雲のマーク →「アカウントを削除する」からできます。プレミアムプランの解約は、iPhone の「設定」→ 自分の名前 →「サブスクリプション」から行えます。</p>
+
+  <h2><span>LEGAL</span>規約</h2>
+  <div class="links">
+    <a href="terms.html">利用規約</a>
+    <a href="privacy.html">プライバシーポリシー</a>
+  </div>
+
+  <footer>© ゲームブック工房</footer>
+</main>
+</body>
+</html>
