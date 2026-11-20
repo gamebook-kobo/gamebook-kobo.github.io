@@ -1,0 +1,29 @@
+{
+  "name": "ゲームブック工房（ベータ）",
+  "short_name": "ゲームブック工房",
+  "description": "ストーリーフローチャートで、分岐する物語とTRPGシナリオをつくる",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0A0F1C",
+  "theme_color": "#0A0F1C",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
