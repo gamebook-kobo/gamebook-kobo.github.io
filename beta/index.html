@@ -200,6 +200,18 @@ input[type=checkbox]{accent-color:var(--hi);width:16px;height:16px}
 .chap .ct b{font-family:var(--sans);color:var(--ink);font-size:12px;margin-left:6px;letter-spacing:.08em}
 .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:4px}
 .grp.dim{opacity:.22}
+.edges path.rdim{stroke-opacity:.12}
+.routebar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--hi);border-radius:999px;padding:6px 8px 6px 14px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.35);max-width:92%}
+.routebar b{color:var(--hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard .rhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rcard .rhead b{flex:1;min-width:0}
+.route{border-top:1px dashed var(--line2);padding:10px 0 4px;margin-top:8px}
+.route .rh{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.route .rh .sp{flex:1}
+.route .steps{font-size:13px;line-height:1.9;color:var(--ink2)}
+.route .steps a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--line2);cursor:pointer}
+.route .steps .via{color:var(--muted)}
+.route .rc{font-size:12px;color:var(--muted);margin-top:2px}
 .zoomlbl{position:absolute;left:14px;bottom:18px;font-family:var(--mono);letter-spacing:.14em;font-size:10px;color:var(--muted);border:1px solid #263650;border-radius:4px;padding:4px 8px;background:rgba(10,15,28,.85);z-index:3}
 .fab{position:absolute;right:16px;bottom:14px;z-index:3;width:54px;height:54px;border-radius:50%;background:var(--hi);color:var(--hi-ink);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(0,0,0,.45)}
 .fab .ico{width:24px;height:24px;stroke-width:2}
@@ -792,7 +804,7 @@ function normalize(p){
   p.vars.forEach(v=>{ if(v.max===undefined) v.max='10'; v.meter=!!v.meter; v.memo=v.memo||''; });
   return p;
 }
-const APP_VERSION='0.9.0';
+const APP_VERSION='0.10.0';
 const S={view:'home',projects:[],p:null,tab:'map',sel:null,cam:{x:30,y:30,z:1},play:null,showGM:true,loadNote:'',pv:false,legend:false};
 /* ---------- 元に戻す／やり直す ---------- */
 const Hist={undo:[],redo:[],base:null,open:false,t:null};
@@ -1484,7 +1496,7 @@ function importDialog(){
 }
 function openProject(p,relayout,fresh){
   S.p=normalize(p);
-  S.view='editor'; S.tab='map'; S.sel=fresh?p.startId:null; S.play=null; S.pv=false; S.cam={x:30,y:30,z:1};
+  S.view='editor'; S.tab='map'; S.route=null; S.routeOpen={}; S.sel=fresh?p.startId:null; S.play=null; S.pv=false; S.cam={x:30,y:30,z:1};
   histReset(); render();
   requestAnimationFrame(()=>{ if(relayout){ autoLayout(); renderMapInner(); Store.save(p); Hist.base=JSON.stringify(p); } fitView(); });
 }
@@ -1507,7 +1519,7 @@ function editorMenu(){
 }
 function renderEditor(){
   const p=P(); const probs=problems(); const g=isGame();
-  const nav=[['map','フロー','flow'],['list','シーン','list'],['vars','値','vals'],['npcs','人物・場所','talk']];
+  const nav=[['map','フロー','flow'],['routes','ルート','route'],['list','シーン','list'],['vars','値','vals'],['npcs','人物・場所','talk']];
   const go=(k)=>{ S.tab=k; if(k==='play'&&!S.play) startPlay(); render(); if(k==='map') requestAnimationFrame(applyCam); };
   app.append(
     h('div',{class:'top'},
@@ -1524,6 +1536,7 @@ function renderEditor(){
   const body=document.getElementById('body');
   if(S.tab==='map') renderMap(body);
   else if(S.tab==='list') renderList(body,probs);
+  else if(S.tab==='routes') renderRoutes(body);
   else if(S.tab==='vars') renderVars(body);
   else if(S.tab==='npcs') renderNpcs(body);
   else if(S.tab==='play') renderPlay(body);
@@ -1568,6 +1581,7 @@ function addNode(type,near){
 const NS='http://www.w3.org/2000/svg';
 const ICONS={
   action:'<path d="M2 8h9M8 4.5 11.5 8 8 11.5"/>',
+  route:'<circle cx="3" cy="8" r="1.6" fill="currentColor"/><path d="M4.6 8H7l3-4h3.5M7 8l3 4h3.5"/><circle cx="13.5" cy="4" r="1.2"/><circle cx="13.5" cy="12" r="1.2"/>',
   choice:'<rect x="2" y="2" width="8" height="8"/><rect x="6" y="6" width="8" height="8" fill="currentColor"/>',
   talk:'<path d="M2 3h12v8H7.5L4.5 13.5V11H2z"/>',
   search:'<circle cx="6.5" cy="6.5" r="4"/><path d="M9.6 9.6 14 14"/>',
@@ -1652,6 +1666,7 @@ function renderMap(body){
   worldEl.append(svgEl);
   vpEl.append(...[worldEl,
     S.legend?legendEl():null,
+    S.route&&!S.pv?h('div',{class:'routebar'},h('b',{},S.route.label),h('button',{class:'btn sm',onclick:()=>{ S.tab='routes'; render(); }},'一覧へ'),h('button',{class:'btn sm ghost','aria-label':'ルート表示をやめる',onclick:()=>{ S.route=null; renderMapInner(); render(); requestAnimationFrame(applyCam); }},'✕')):null,
     h('button',{class:'zoomlbl',id:'zoomv',title:'全体を表示',onclick:fitView},Math.round(S.cam.z*100)+'%'),
     S.pv?null:h('button',{class:'fab','aria-label':'場面を追加',title:'場面を追加',onclick:()=>addSceneFromMap('scene')},icon('plus')),
     fresh&&!S.pv&&!S.sel?h('div',{class:'nexthint',style:'position:absolute;left:50%;bottom:84px;transform:translateX(-50%);width:min(320px,80%);z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.4)'},h('b',{},'まずはここから'),'最初の場面を押して、本文と選択肢を書いてみよう。'):null
@@ -1681,7 +1696,7 @@ function renderMapInner(){
     const here=S.pv&&S.play&&S.play.cur===n.id;
     const cls='grp'+(n.key?' key':'')+(n.type==='ending'?' ending':'')+(S.sel===n.id?' sel':'')+(locked?' locked':'')+(here?' here':'');
     const pl=n.place&&placeById(n.place);
-    const dim=S.placeFilter&&n.place!==S.placeFilter;
+    const dim=(S.placeFilter&&n.place!==S.placeFilter)||(S.route&&!S.pv&&!S.route.nodes.has(n.id));
     const head=h('div',{class:'gt'},h('span',{class:'gn'},String(nodeNo(n.id)).padStart(2,'0')),h('span',{class:'gtt'},locked?'・・・':(n.key?`『${n.title||'無題'}』`:(n.title||'無題'))),
       isStart?h('span',{class:'tag start'},'開始'):null, n.type==='ending'&&!isStart?h('span',{class:'tag end'},'END'):null);
     let inner;
@@ -1742,12 +1757,13 @@ function drawEdges(){
       for(const [t,kind,dy] of legs){
         const tn=nodeById(t); const tel=els[t]; if(!tn||!tel) continue;
         const y1=yb+dy, x2=tn.x, y2=tn.y+17;
-        const hi=!S.pv&&S.sel&&(S.sel===n.id||S.sel===t);
+        const inR=S.route&&!S.pv&&S.route.legs.has(c.id+'>'+t);
+        const hi=(!S.pv&&S.sel&&(S.sel===n.id||S.sel===t))||inR;
         const un=S.pv&&!seen.c[c.id];
         let d, back=false;
         if(x2>x1+24){ const xm=Math.min(x2-12, x1+18+(ci%5)*7+(kind==='ng'?4:0)); d=elbow(x1,y1,xm,y2,x2); }
         else { back=true; d=`M${x1} ${y1} H${x1+10}`; const tx=add('text',{x:x1+13,y:y1+3.5,class:'bk'+(un?' un':'')}); tx.textContent=un?'← ・・・':`← ${nodeNo(t)}. ${tn.title||'無題'}`; }
-        add('path',{d,class:[kind==='ng'||kind==='fum'?'fail':'',back?'back':'',un?'unseen':'',hi?'hi':''].filter(Boolean).join(' '),'marker-end':un||back?'':'url(#dot)'});
+        add('path',{d,class:[kind==='ng'||kind==='fum'?'fail':'',back?'back':'',un?'unseen':'',hi?'hi':'',S.route&&!S.pv&&!inR?'rdim':''].filter(Boolean).join(' '),'marker-end':un||back?'':'url(#dot)'});
         if((kind==='crit'||kind==='fum')&&!un){ const tx=add('text',{x:x1+4,y:y1+(kind==='crit'?-5:12),class:'bk'}); tx.textContent=kind==='crit'?'クリティカル':'ファンブル'; }
         else if(kind&&!un){ const m=add('g',{class:'mk',transform:`translate(${x1+3} ${y1+(kind==='ok'?-13:4)}) scale(.55)`,color:kind==='ok'?'#5EA8FF':'#C98A9A'}); m.innerHTML=ICONS[kind].replace('<path','<path fill="none" stroke="currentColor" stroke-linecap="round"'); }
       }
@@ -2069,6 +2085,72 @@ function orderedNodes(){
   while(q.length){ const id=q.shift(); if(!id||seen.has(id)||!nodeById(id)) continue; seen.add(id); out.push(nodeById(id)); for(const c of nodeById(id).choices) q.push(...targetsOf(c)); }
   return {reach:out, rest:p.nodes.filter(n=>!seen.has(n.id))};
 }
+/* ---------- ルート一覧：はじまりから各エンディングまでの道すじ ----------
+   同じ場面に戻る寄り道は省いて数える（場面を重複しない道すじ）。条件はたどらずに「必要な条件」として表示する。 */
+const ROUTE_MAX=30, ROUTE_BUDGET=80000;
+const LEG_NAME={ok:'判定成功',ng:'判定失敗',crit:'クリティカル',fum:'ファンブル'};
+function legsOf(c){ if(c.kind!=='check') return [[c.to,'']]; const l=[[c.okTo,'ok'],[c.ngTo,'ng']]; if(c.cf){ l.push([c.critTo,'crit'],[c.fumTo,'fum']); } return l; }
+function findRoutes(){
+  const p=P(); const res=new Map(); let steps=0, capped=false;
+  if(!nodeById(p.startId)) return {res,capped,empty:true};
+  const path=[{id:p.startId}]; const on=new Set([p.startId]);
+  const keep=(r)=>{ r.paths.sort((a,b)=>a.length-b.length); r.paths.length=Math.min(r.paths.length,ROUTE_MAX); };
+  const dfs=(id)=>{
+    if(capped) return; if(++steps>ROUTE_BUDGET){ capped=true; return; }
+    const n=nodeById(id); if(!n) return;
+    if(n.type==='ending'){ let r=res.get(id); if(!r){ r={count:0,paths:[]}; res.set(id,r); } r.count++; r.paths.push(path.slice()); if(r.paths.length>ROUTE_MAX*3) keep(r); return; }
+    for(const c of n.choices){ const done=new Set();
+      for(const [t,k] of legsOf(c)){ if(!t||done.has(t)||on.has(t)||!nodeById(t)) continue; done.add(t);
+        path.push({id:t,c,k}); on.add(t); dfs(t); on.delete(t); path.pop(); if(capped) return; } }
+  };
+  dfs(p.startId); for(const r of res.values()) keep(r);
+  return {res,capped};
+}
+function routeConds(pa){ const out=[]; for(const s of pa){ if(!s.c) continue; for(const x of s.c.conds) out.push(fmtCond(x)); if(s.k) out.push(`「${s.c.label||'無題'}」で${LEG_NAME[s.k]}`); } return [...new Set(out)]; }
+function showRoute(pa,label){
+  const nodes=new Set(pa.map(s=>s.id)); const legs=new Set(); pa.forEach(s=>{ if(s.c) legs.add(s.c.id+'>'+s.id); });
+  S.route={nodes,legs,label}; S.sel=null; S.pv=false; S.tab='map'; render();
+  requestAnimationFrame(()=>{ const ns=pa.map(s=>nodeById(s.id)).filter(Boolean); if(!ns.length||!vpEl) return applyCam();
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(const n of ns){ x0=Math.min(x0,n.x); y0=Math.min(y0,n.y); x1=Math.max(x1,n.x+GW); y1=Math.max(y1,n.y+nodeH(n)); }
+    const r=vpEl.getBoundingClientRect(); const z=Math.max(.5,Math.min(1,(r.width-40)/(x1-x0||1),(r.height-110)/(y1-y0||1)));
+    const st=ns[0]; S.cam.z=z; S.cam.x=(x1-x0)*z<=r.width-40?(r.width-(x1-x0)*z)/2-x0*z:20-st.x*z; S.cam.y=56+((r.height-110)-(y1-y0)*z)/2-y0*z; applyCam(); });
+}
+function renderRoutes(body){
+  const p=P(); const g=isGame(); const {res,capped,empty}=findRoutes();
+  let dc=null; try{ dc=deepCheck(); }catch(e){}
+  const missed=new Set(dc&&!dc.empty&&!dc.capped?dc.endsMissed.map(n=>n.id):[]);
+  const rank={true:0,good:1,normal:2,bad:3};
+  const ends=p.nodes.filter(n=>n.type==='ending').sort((a,b)=>(rank[a.endKind]??4)-(rank[b.endKind]??4)||nodeNo(a.id)-nodeNo(b.id));
+  const total=[...res.values()].reduce((a,r)=>a+r.count,0);
+  const step=(s,i)=>[i?h('span',{class:'via'},` →「${s.c.label||'無題'}」${s.k?'（'+LEG_NAME[s.k]+'）':''}→ `):null,h('a',{onclick:()=>{ S.tab='list'; render(); selectNode(s.id); }},`${nodeNo(s.id)}. ${nodeById(s.id).title||'無題'}`)];
+  const card=(e)=>{
+    const r=res.get(e.id); const open=S.routeOpen[e.id]||3; const kind=END_KINDS[e.endKind];
+    return h('div',{class:'card rcard'},
+      h('div',{class:'rhead'},h('span',{class:'tag end'},kind?kind+' END':'END'),h('b',{},nodeName(e.id)),
+        h('span',{class:'hint',style:'margin:0'},r?`${capped?r.count+'通り以上':r.count+'通り'}・最短${r.paths[0].length}場面`:'ルートなし')),
+      !r?h('div',{class:'warns',style:'margin:8px 0 0'},'はじまりから、この結末につながる道がありません。どこかの選択肢をここへつなげてください。'):
+      missed.has(e.id)?h('div',{class:'warns',style:'margin:8px 0 0'},'道はありますが、条件がそろわず、いまはどう遊んでもたどり着けません（通しチェックより）。'):null,
+      r?r.paths.slice(0,open).map((pa,i)=>{ const cs=routeConds(pa); const label=`${kind?kind+' END':'END'}「${e.title||'無題'}」ルート${i+1}`;
+        return h('div',{class:'route'},
+          h('div',{class:'rh'},h('span',{},`ルート${i+1}・${pa.length}場面`),h('span',{class:'sp'}),h('button',{class:'btn sm',onclick:()=>showRoute(pa,label)},'フローで見る')),
+          h('div',{class:'steps'},pa.map(step)),
+          cs.length?h('div',{class:'rc'},'必要なこと：'+cs.join('、')):null); }):null,
+      r&&r.paths.length>open?h('button',{class:'addsub',style:'padding:0;margin-top:8px',onclick:()=>{ S.routeOpen[e.id]=open+10; render(); }},`ほかのルートも見る（残り${r.paths.length-open}${r.count>r.paths.length?'＋':''}）`):null);
+  };
+  body.append(h('div',{class:'main'},h('div',{class:'scroll'},h('div',{class:'wrap'},
+    h('h2',{class:'h2'},'ルート一覧'),
+    h('p',{class:'desc'},'はじまりから、それぞれのエンディングまでの道すじです。「フローで見る」でその道だけを光らせます。'),
+    empty?h('div',{class:'warns'},'開始シーンが決まっていません。'):
+    !ends.length?h('div',{class:'card'},h('b',{},'エンディングがまだありません'),h('p',{class:'hint'},'終わりの場面を「エンディング」にすると、そこまでのルートがここに並びます。'),h('button',{class:'btn sm pri',onclick:()=>{ const n=addNode('ending'); S.tab='list'; render(); selectNode(n.id); }},'エンディングを追加')):
+    [h('div',{class:'card',style:'display:flex;gap:16px;flex-wrap:wrap'},
+      h('div',{},h('div',{class:'hint',style:'margin:0'},'エンディング'),h('b',{style:'font-size:20px'},ends.length)),
+      h('div',{},h('div',{class:'hint',style:'margin:0'},'ルート'),h('b',{style:'font-size:20px'},capped?total+'+':total)),
+      h('div',{},h('div',{class:'hint',style:'margin:0'},'たどり着けない結末'),h('b',{style:'font-size:20px'},ends.filter(e=>!res.has(e.id)||missed.has(e.id)).length))),
+     capped?h('p',{class:'hint'},'分かれ道が多いため、数えきれない分は省いています。'):null,
+     ends.map(card),
+     h('p',{class:'hint'},'同じ場面に戻る寄り道は、ひとつのルートとして数えていません。')]
+  ))));
+}
 function renderList(body,probs){
   const p=P(); const {reach,rest}=orderedNodes();
   const ordered=[...reach,...rest]; const unreach=new Set(rest.map(n=>n.id));
@@ -2152,6 +2234,16 @@ function renderVars(body){
 
 /* ---------- npcs ---------- */
 /* 人物カードの中の「この人物の値」：好感度・HPなどをその人物にひもづけて、ここで直接編集できる */
+/* ココフォリアの駒：部屋に貼り付けるとキャラクター駒になる形式 */
+function cocoPiece(c){
+  const p=P(); const mine=p.vars.filter(v=>v.owner===c.id);
+  const nums=mine.filter(v=>v.type==='num'); const flags=mine.filter(v=>v.type==='flag');
+  const n=(x)=>{ const v=+x; return isNaN(v)?0:v; };
+  const status=nums.filter(v=>v.meter).map(v=>({label:v.name||'値',value:n(v.init),max:n(v.max)||n(v.init)}));
+  const params=nums.filter(v=>!v.meter).map(v=>({label:v.name||'値',value:String(n(v.init))}));
+  const memo=[c.role?`【${c.role}】`:'',c.memo||'',...flags.map(v=>`${v.name||'フラグ'}：${+v.init?'ON':'OFF'}`)].filter(Boolean).join('\n');
+  return JSON.stringify({kind:'character',data:{name:c.name||'NPC',memo,initiative:0,externalUrl:'',iconUrl:null,commands:'',status,params,secret:false,invisible:false,hideStatus:false,color:'#888888'}});
+}
 function npcVals(c){
   const p=P(); const g=isGame(); const mine=p.vars.filter(v=>v.owner===c.id);
   const kinds=[['num','数値'],['flag','フラグ']];
@@ -2182,6 +2274,7 @@ function renderNpcs(body){
       h('div',{class:'lbl',style:'margin-top:8px'},'メモ（性格・口調・知っている情報など）'),
       h('textarea',{class:'inp',rows:3,value:c.memo,oninput:(e)=>{ c.memo=e.target.value; changed({map:false}); }}),
       npcVals(c),
+      g?null:h('div',{class:'row',style:'margin-top:8px'},h('button',{class:'btn sm',onclick:()=>copyText(cocoPiece(c),'コピーしました。ココフォリアの部屋で貼り付けると駒になります')},'ココフォリアの駒をコピー')),
       h('div',{class:'row',style:'margin-top:8px;flex-wrap:wrap'},h('span',{class:'hint'},'登場シーン：'),
         ap.length?ap.map(n=>h('button',{class:'btn sm',onclick:()=>{ S.tab='list'; render(); selectNode(n.id); }},nodeName(n.id))):h('span',{class:'hint'},'なし'),
         h('button',{class:'btn ghost sm danger',style:'margin-left:auto',onclick:()=>confirmBox('削除しますか？',`「${c.name||'無名'}」を削除します。`+(p.vars.some(v=>v.owner===c.id)?'この人物の値は消えずに「だれのものでもない」値として残ります。':''),'削除する',()=>{ p.npcs.splice(i,1); p.vars.forEach(v=>{ if(v.owner===c.id) v.owner=''; }); changed({map:false}); render(); })},'削除'))
@@ -2762,8 +2855,8 @@ function exportGate(name,run){
     [{label:'やめる'},{label:'動画を見て1回使う',run:()=>{ Ads.reward().then(ok=>{ if(ok) run(); }); }},{label:'プレミアムにする',cls:'pri',run:()=>paywall('プレミアムにすると、書き出しがいつでも使えます。')}]);
 }
 /* リワード動画（AdMob）。パーソナライズなし・トラッキングの許可は求めない。
-   いまはGoogleのテスト用ID。本番IDはAdMob登録後に差し替える（Info.plistのGADApplicationIdentifierも） */
-const ADMOB={ reward:'ca-app-pub-3940256099942544/1712485313', test:true };
+   本番ID設定済み。Info.plistのGADApplicationIdentifierも本番。 */
+const ADMOB={ reward:'ca-app-pub-7445523928769045/1990949418', test:true }; /* 公開ビルドで test:false にする（自分の広告を本番で押さないため、それまではテスト広告） */
 const Ads={
   _init:null,
   am(){ return NATIVE?CapP().AdMob:null; },

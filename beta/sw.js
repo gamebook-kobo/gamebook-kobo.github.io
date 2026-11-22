@@ -1,6 +1,6 @@
 // ゲームブック工房 オフライン用 Service Worker
 // 更新したら CACHE の番号を上げる（例: v0.1.0 → v0.1.1）
-const CACHE = 'gamebook-kobo-v0.9.0';
+const CACHE = 'gamebook-kobo-v0.10.0';
 const ASSETS = ['./', './index.html', './vendor/supabase.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
